@@ -8,6 +8,7 @@ namespace DevOps.Organization.Project.Git.PR
 {
     internal enum Status
     {
+        NotIncluded = -1,
         NotSet = 0,
         Active = 1,
         Abandoned = 2,
