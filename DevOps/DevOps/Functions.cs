@@ -60,6 +60,11 @@ public class Functions
                     if (!description.StartsWith(ForbiddenBranchTransitionMessage))
                         action = CRUD.Update(url + "?" + apiVersion, new UpdateRequest() { Description = $"{ForbiddenBranchTransitionMessage}| {description}", Status = Status.Abandoned });
                     break;
+                case "target":
+                    string newTarget = allowedTransitions.Find(x=>x.Source == source)?.Target;
+                    if (newTarget != null)
+                        action = CRUD.Update(url + "?" + apiVersion, new UpdateRequest() { TargetRefName = newTarget });
+                    break;
                 case "comment":
                     var comment = new Organization.Project.Common.Comment
                     {
