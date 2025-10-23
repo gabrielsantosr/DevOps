@@ -42,43 +42,51 @@ public class Functions
 
         if (status == "active" && !allowedTransitions.Any(x => x.Source == source && x.Target == target))
         {
-            string actionValue = req.Query.ContainsKey("action") ? req.Query["action"] : string.Empty;
+            string[] actionValues = (req.Query.ContainsKey("action") ? req.Query["action"].ToString() : "").Split(',');
 
-            switch (actionValue)
+            foreach (string actionValue in actionValues)
             {
-                case "title":
-                    if (!title.StartsWith(ForbiddenBranchTransitionMessage))
-                        action = CRUD.Update(url + "?" + apiVersion, new UpdateRequest() { Title = $"{ForbiddenBranchTransitionMessage}| {title}" });
-                    break;
-                case "title-abandon":
-                    if (!title.StartsWith(ForbiddenBranchTransitionMessage))
-                        action = CRUD.Update(url + "?" + apiVersion, new UpdateRequest() { Title = $"{ForbiddenBranchTransitionMessage}| {title}", Status = Status.Abandoned });
-                    break;
-                case "description":
-                    if (!description.StartsWith(ForbiddenBranchTransitionMessage))
-                        action = CRUD.Update(url + "?" + apiVersion, new UpdateRequest() { Description = $"{ForbiddenBranchTransitionMessage}| {description}" });
-                    break;
-                case "description-abandon":
-                    if (!description.StartsWith(ForbiddenBranchTransitionMessage))
-                        action = CRUD.Update(url + "?" + apiVersion, new UpdateRequest() { Description = $"{ForbiddenBranchTransitionMessage}| {description}", Status = Status.Abandoned });
-                    break;
-                case "target":
-                    string newTarget = allowedTransitions.Find(x=>x.Source == source)?.Target;
-                    if (newTarget != null)
-                        action = CRUD.Update(url + "?" + apiVersion, new UpdateRequest() { TargetRefName = newTarget });
-                    break;
-                case "comment":
-                    var comment = new Comment
-                    {
-                        content = ForbiddenBranchTransitionMessage,
-                        commentType = "system",
-                    };
-                    var commentThread = new PRThread()
-                    {
-                        status = "closed",
-                        comments = new List<Comment>() { comment }
-                    };
-                    action = CRUD.Create(url + "/threads?" + apiVersion, commentThread);
+                bool abort = true;
+                switch (actionValue)
+                {
+                    case "title":
+                        if (!title.StartsWith(ForbiddenBranchTransitionMessage))
+                            action = CRUD.Update(url + "?" + apiVersion, new UpdateRequest() { Title = $"{ForbiddenBranchTransitionMessage}| {title}" });
+                        break;
+                    case "title-abandon":
+                        if (!title.StartsWith(ForbiddenBranchTransitionMessage))
+                            action = CRUD.Update(url + "?" + apiVersion, new UpdateRequest() { Title = $"{ForbiddenBranchTransitionMessage}| {title}", Status = Status.Abandoned });
+                        break;
+                    case "description":
+                        if (!description.StartsWith(ForbiddenBranchTransitionMessage))
+                            action = CRUD.Update(url + "?" + apiVersion, new UpdateRequest() { Description = $"{ForbiddenBranchTransitionMessage}| {description}" });
+                        break;
+                    case "description-abandon":
+                        if (!description.StartsWith(ForbiddenBranchTransitionMessage))
+                            action = CRUD.Update(url + "?" + apiVersion, new UpdateRequest() { Description = $"{ForbiddenBranchTransitionMessage}| {description}", Status = Status.Abandoned });
+                        break;
+                    case "target":
+                        string newTarget = allowedTransitions.Find(x => x.Source == source)?.Target;
+                        if (newTarget != null)
+                            action = CRUD.Update(url + "?" + apiVersion, new UpdateRequest() { TargetRefName = newTarget });
+                        else
+                            abort = false;
+                        break;
+                    case "comment":
+                        var comment = new Comment
+                        {
+                            content = ForbiddenBranchTransitionMessage,
+                            commentType = "system",
+                        };
+                        var commentThread = new PRThread()
+                        {
+                            status = "closed",
+                            comments = new List<Comment>() { comment }
+                        };
+                        action = CRUD.Create(url + "/threads?" + apiVersion, commentThread);
+                        break;
+                }
+                if (abort)
                     break;
             }
         }
