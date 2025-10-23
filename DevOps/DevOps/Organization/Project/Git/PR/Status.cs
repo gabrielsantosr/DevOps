@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace DevOps.Organization.Project.Git.PR
+﻿namespace DevOps.Organization.Project.Git.PR
 {
     internal enum Status
     {
-        NotIncluded = -1,
+        Ignore = -1,
         NotSet = 0,
         Active = 1,
         Abandoned = 2,

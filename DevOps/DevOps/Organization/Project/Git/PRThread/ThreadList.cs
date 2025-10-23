@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 
 
-namespace DevOps.Organization.Project.Common;
+namespace DevOps.Organization.Project.Git.PRThread;
 public class Author
 {
     public string displayName { get; set; }
@@ -38,11 +38,11 @@ public class Comment
 
 public class ThreadList
 {
-    public List<Thread> value { get; set; }
+    public List<PRThread> value { get; set; }
     public int count { get; set; }
 }
 
-public class Thread
+public class PRThread
 {
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public int? id { get; set; }
