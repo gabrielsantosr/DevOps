@@ -1,10 +1,11 @@
 using DevOps.Helpers;
-using DevOps.Organization.Project.Common;
 using DevOps.Organization.Project.Git.PR;
+using DevOps.Organization.Project.Git.PRThread;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+using System.Net;
 using JSON = System.Text.Json.JsonSerializer;
 
 namespace DevOps;
@@ -36,7 +37,7 @@ public class Functions
         string description = pr.resource.description;
         string url = pr.resource.url;
 
-        Task<string> action = null;
+        Task<(string, HttpStatusCode)> action = null;
 
         if (status == "active" && !allowedTransitions.Any(x => x.Source == source && x.Target == target))
         {
@@ -66,12 +67,12 @@ public class Functions
                         action = CRUD.Update(url + "?" + apiVersion, new UpdateRequest() { TargetRefName = newTarget });
                     break;
                 case "comment":
-                    var comment = new Organization.Project.Common.Comment
+                    var comment = new Comment
                     {
                         content = ForbiddenBranchTransitionMessage,
                         commentType = "system",
                     };
-                    var commentThread = new Organization.Project.Common.Thread()
+                    var commentThread = new PRThread()
                     {
                         status = "closed",
                         comments = new List<Comment>() { comment }
@@ -80,9 +81,12 @@ public class Functions
                     break;
             }
         }
-        return (action != null) 
-            ? new OkObjectResult(await action) 
-            : new OkResult();
+        if (action is null)
+            return new OkResult();
+        var result = await action;
+        string resultContent = result.Item1;
+        HttpStatusCode statusCode = result.Item2;
+        return new OkObjectResult(resultContent) { StatusCode = (int)statusCode };
 
     }
 }
