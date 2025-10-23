@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Headers;
+﻿using System.Net;
+using System.Net.Http.Headers;
 using System.Text;
 
 namespace DevOps.Helpers
@@ -6,54 +7,51 @@ namespace DevOps.Helpers
     public static class CRUD
     {
         private static readonly string acceptHeaderValue = $"application/json";
-        
-        public static async Task<string> Create(string url, object itemToCreate)
+
+        public static Task<(string, HttpStatusCode)> Create(string url, object itemToCreate) => Request(Enums.CRUD.Create, url, itemToCreate);
+
+        public static Task<(string, HttpStatusCode)> Retrieve(string url) => Request(Enums.CRUD.Retrieve, url);
+
+        public static Task<(string, HttpStatusCode)> Update(string url, object itemToUpdate) => Request(Enums.CRUD.Update, url, itemToUpdate);
+
+        public static Task<(string, HttpStatusCode)> Delete(string url, object itemToUpdate) => Request(Enums.CRUD.Delete, url);
+
+        private static async Task<(string, HttpStatusCode)> Request(Enums.CRUD crudOperation, string url, object request = null)
         {
-            string serializedCreateRequest = System.Text.Json.JsonSerializer.Serialize(itemToCreate);
-            using (HttpClient client = new HttpClient())
+
+            try
             {
-                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(acceptHeaderValue));
-
-                client.DefaultRequestHeaders.Authorization = await Authentication.GetAuthorization();
-
-                using (HttpResponseMessage response = await client.PostAsync(url, new StringContent(serializedCreateRequest, Encoding.UTF8, "application/json")))
+                StringContent reqBody = request is null ? null : new StringContent(System.Text.Json.JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
+                using (HttpClient client = new HttpClient())
                 {
-                    string responseBody = await response.Content.ReadAsStringAsync();
-                    return responseBody;
+                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(acceptHeaderValue));
+
+                    client.DefaultRequestHeaders.Authorization = await Authentication.GetAuthorization();
+
+                    Task<HttpResponseMessage> responseTask = null;
+                    switch (crudOperation)
+                    {
+                        case Enums.CRUD.Create:
+                            responseTask = client.PostAsync(url, reqBody); break;
+                        case Enums.CRUD.Retrieve:
+                            responseTask = client.GetAsync(url); break;
+                        case Enums.CRUD.Update:
+                            responseTask = client.PatchAsync(url, reqBody); break;
+                        case Enums.CRUD.Delete:
+                            responseTask = client.DeleteAsync(url); break;
+                    }
+                    using (HttpResponseMessage response = await responseTask)
+                    {
+                        string responseBody = await response.Content.ReadAsStringAsync();
+                        return (responseBody, response.StatusCode);
+                    }
                 }
             }
-        }
-        public static async Task<string> Retrieve(string url)
-        {
-            using (HttpClient client = new HttpClient())
+            catch (Exception ex)
             {
-                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(acceptHeaderValue));
-
-
-                client.DefaultRequestHeaders.Authorization = await Authentication.GetAuthorization();
-
-                using (HttpResponseMessage response = await client.GetAsync(url))
-                {
-                    string responseBody = await response.Content.ReadAsStringAsync();
-                    return responseBody;
-                }
-            }
-        }
-        public static async Task<string> Update(string url, object itemToUpdate)
-        {
-            string serializedUpdateRequest = System.Text.Json.JsonSerializer.Serialize(itemToUpdate);
-            using (HttpClient client = new HttpClient())
-            {
-                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(acceptHeaderValue));
-
-                client.DefaultRequestHeaders.Authorization = await Authentication.GetAuthorization();
-
-                using (HttpResponseMessage response = await client.PatchAsync(url, new StringContent(serializedUpdateRequest, Encoding.UTF8, "application/json")))
-                {
-                    string responseBody = await response.Content.ReadAsStringAsync();
-                    return responseBody;
-                }
+                return (ex.Message, HttpStatusCode.InternalServerError);
             }
         }
     }
 }
+

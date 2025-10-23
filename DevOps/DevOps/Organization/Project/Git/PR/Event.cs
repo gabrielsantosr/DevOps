@@ -1,4 +1,20 @@
 ﻿namespace DevOps.Organization.Project.Git.PR;
+// Event is based on GitPullRequest https://learn.microsoft.com/en-us/dotnet/api/microsoft.teamfoundation.sourcecontrol.webapi.gitpullrequest
+// The classes in this file are a conversion from a request taken from the WebHook history.
+public class Event
+{
+    public string subscriptionId { get; set; }
+    public int notificationId { get; set; }
+    public string id { get; set; }
+    public string eventType { get; set; }
+    public string publisherId { get; set; }
+    public Message message { get; set; }
+    public DetailedMessage detailedMessage { get; set; }
+    public Resource resource { get; set; }
+    public string resourceVersion { get; set; }
+    public ResourceContainers resourceContainers { get; set; }
+    public DateTime createdDate { get; set; }
+}
 
 public class Account
 {
@@ -140,21 +156,6 @@ public class ResourceContainers
     public Collection collection { get; set; }
     public Account account { get; set; }
     public Project project { get; set; }
-}
-
-public class Event
-{
-    public string subscriptionId { get; set; }
-    public int notificationId { get; set; }
-    public string id { get; set; }
-    public string eventType { get; set; }
-    public string publisherId { get; set; }
-    public Message message { get; set; }
-    public DetailedMessage detailedMessage { get; set; }
-    public Resource resource { get; set; }
-    public string resourceVersion { get; set; }
-    public ResourceContainers resourceContainers { get; set; }
-    public DateTime createdDate { get; set; }
 }
 
 public class Statuses
