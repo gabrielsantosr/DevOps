@@ -8,19 +8,20 @@ The allowed transitions should be stored in environment variable `AllowedBranchT
 
 If the source-target combination is not found, the PR is active and there is a valid action included in the HTTP query, endpoint behaves according to this table:
 
-| action              | behaviour
-| ------------------- | -------------------------------------------------------------------------------------------------------- |
-| title               | If the title is not prefixed with a forbidden message, the forbidden message is added as a prefix.       |
-| title-abandon       | Same as action _title_, but it also changes the status of the PR to abandoned.                           |
-| description         | If the description is not prefixed with a forbidden message, the forbidden message is added as a prefix. |
-| description-abandon | Same as action _description_, but it also changes the status of the PR to abandoned.                     |
-| comment             | Adds the forbidden comment as a system comment to the pull request.                                      |
-| target              | Automatically changes the target branch to the target of the first instance in `AllowedBranchTransitions` which source equals the PR source | 
+| `action`              | behaviour
+| --------------------- | -------------------------------------------------------------------------------------------------------- |
+| `title`               | If the title is not prefixed with a forbidden message, the forbidden message is added as a prefix.       |
+| `title-abandon`       | Same as action _title_, but it also changes the status of the PR to abandoned.                           |
+| `description`         | If the description is not prefixed with a forbidden message, the forbidden message is added as a prefix. |
+| `description-abandon` | Same as action _description_, but it also changes the status of the PR to abandoned.                     |
+| `comment`             | Adds the forbidden comment as a system comment to the pull request.                                      |
+| `target`              | Automatically changes the target branch to the target of the first instance in `AllowedBranchTransitions` which source equals the PR source | 
 
 As of now, the forbiddden message is stored in an environment variable, and I use special emoji chars, which can be included within strings as `\u<char-code>`,which are properly rendered in title, description and comments of PRs.
 
 # References
-Webhooks: [text](https://learn.microsoft.com/en-us/azure/devops/repos/git/create-pr-status-server-with-azure-functions?view=azure-devops)
-Managed Identity setup: [text](https://learn.microsoft.com/en-us/azure/devops/integrate/get-started/authentication/service-principal-managed-identity?view=azure-devops) 
+[WebHooks](https://learn.microsoft.com/en-us/azure/devops/repos/git/create-pr-status-server-with-azure-functions?view=azure-devops)
 
-Something I didn't find mentioned in the Managed Identity setup link is that, first, it is required to connect DevOps with your Azure tenant from DevOps Organization Settings > Microsoft Entra ([text](https://dev.azure.com/<your-organization-name>/_settings/organizationAad))
+[Managed Identity setup](https://learn.microsoft.com/en-us/azure/devops/integrate/get-started/authentication/service-principal-managed-identity?view=azure-devops)
+
+Something I didn't find mentioned in the Managed Identity setup link is that, first, it is required to connect DevOps with your Azure tenant from DevOps Organization Settings > Microsoft Entra `https://dev.azure.com/<your-organization-name>/_settings/organizationAad`
