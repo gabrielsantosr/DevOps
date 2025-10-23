@@ -1,6 +1,7 @@
 using DevOps.Helpers;
 using DevOps.Organization.Project.Git.PR;
-using DevOps.Organization.Project.Git.PRThread;
+using DevOps.Organization.Project.Git.PR.Event;
+using DevOps.Organization.Project.Git.PR.Thread;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;

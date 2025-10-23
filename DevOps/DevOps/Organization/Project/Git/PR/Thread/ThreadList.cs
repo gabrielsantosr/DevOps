@@ -1,9 +1,8 @@
-﻿using DevOps.Helpers;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 
 
-namespace DevOps.Organization.Project.Git.PRThread;
+namespace DevOps.Organization.Project.Git.PR.Thread;
 public class Author
 {
     public string displayName { get; set; }

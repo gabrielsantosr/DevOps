@@ -18,3 +18,9 @@ If the source-target combination is not found, the PR is active and there is a v
 | target              | Automatically changes the target branch to the target of the first instance in `AllowedBranchTransitions` which source equals the PR source | 
 
 As of now, the forbiddden message is stored in an environment variable, and I use special emoji chars, which can be included within strings as `\u<char-code>`,which are properly rendered in title, description and comments of PRs.
+
+# References
+Webhooks: [text](https://learn.microsoft.com/en-us/azure/devops/repos/git/create-pr-status-server-with-azure-functions?view=azure-devops)
+Managed Identity setup: [text](https://learn.microsoft.com/en-us/azure/devops/integrate/get-started/authentication/service-principal-managed-identity?view=azure-devops) 
+
+Something I didn't find mentioned in the Managed Identity setup link is that, first, it is required to connect DevOps with your Azure tenant from DevOps Organization Settings > Microsoft Entra ([text](https://dev.azure.com/<your-organization-name>/_settings/organizationAad))

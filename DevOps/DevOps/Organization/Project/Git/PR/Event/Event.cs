@@ -1,4 +1,4 @@
-﻿namespace DevOps.Organization.Project.Git.PR;
+﻿namespace DevOps.Organization.Project.Git.PR.Event;
 // Event is based on GitPullRequest https://learn.microsoft.com/en-us/dotnet/api/microsoft.teamfoundation.sourcecontrol.webapi.gitpullrequest
 // The classes in this file are a conversion from a request taken from the WebHook history.
 public class Event
