@@ -1,3 +1,4 @@
+using DevOps.Classes;
 using DevOps.Helpers;
 using DevOps.Organization.Project.Git.PR;
 using DevOps.Organization.Project.Git.PR.Event;
@@ -38,7 +39,7 @@ public class Functions
         string description = pr.resource.description;
         string url = pr.resource.url;
 
-        Task<(string, HttpStatusCode)> action = null;
+        Task<CrudResponse> action = null;
 
         if (status == "active" && !allowedTransitions.Any(x => x.Source == source && x.Target == target))
         {
@@ -85,6 +86,10 @@ public class Functions
                         };
                         action = CRUD.Create(url + "/threads?" + apiVersion, commentThread);
                         break;
+                    case "test":
+                        url = "https://vssps.dev.azure.com/gabrielsantosr/_apis/graph/users";
+                        action = CRUD.Retrieve(url + "?" + apiVersion+"&$top=1", true);
+                        break;
                 }
                 if (abort)
                     break;
@@ -93,9 +98,7 @@ public class Functions
         if (action is null)
             return new OkResult();
         var result = await action;
-        string resultContent = result.Item1;
-        HttpStatusCode statusCode = result.Item2;
-        return new OkObjectResult(resultContent) { StatusCode = (int)statusCode };
+        return new OkObjectResult(result) { StatusCode = (int)result.StatusCode };
 
     }
 }
