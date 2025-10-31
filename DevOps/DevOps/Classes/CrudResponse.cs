@@ -7,7 +7,7 @@ namespace DevOps.Classes
     {
         [JsonIgnore]
         public HttpStatusCode StatusCode { get; set; }
-        public string Content { get; set; }
+        public object Content { get; set; }
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string NextPageToken { get; set; }
 

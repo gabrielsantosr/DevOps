@@ -2,11 +2,14 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
+using JSON = System.Text.Json.JsonSerializer;
 
 namespace DevOps.Helpers
 {
     public static class CRUD
     {
+        private static readonly string apiVersion = Environment.GetEnvironmentVariable("ApiVersion") ?? string.Empty;
+
         private static readonly string acceptHeaderValue = $"application/json";
 
         public static Task<CrudResponse> Create(string url, object itemToCreate) => Request(Enums.CRUD.Create, url, itemToCreate);
@@ -22,7 +25,9 @@ namespace DevOps.Helpers
 
             try
             {
-                StringContent reqBody = request is null ? null : new StringContent(System.Text.Json.JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
+                HttpHelper.UpsertQueryParam(ref url, "api-version", apiVersion);
+
+                StringContent reqBody = request is null ? null : new StringContent(JSON.Serialize(request), Encoding.UTF8, "application/json");
                 using (HttpClient client = new HttpClient())
                 {
                     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(acceptHeaderValue));
@@ -60,6 +65,7 @@ namespace DevOps.Helpers
                     StatusCode = HttpStatusCode.InternalServerError,
                     Content = ex.Message,
                 };
+
             }
         }
 
@@ -67,7 +73,8 @@ namespace DevOps.Helpers
         {
             foreach (var k in headers)
             {
-                if (k.Key.ToLower() == "x-ms-continuationtoken")
+
+                if (k.Key.ToLower() == Constants.Constants.NextPageTokenHeaderKey.ToLower())
                 {
                     return k.Value.First();
                 }
@@ -78,25 +85,31 @@ namespace DevOps.Helpers
         private static async Task<CrudResponse> RetrievePages(string url)
         {
             CrudResponse output = new() { StatusCode = HttpStatusCode.InternalServerError };
-            List<string> results = new List<string>();
+            List<object> results = new();
             string token = null;
             do
             {
-                // Assuming al least the ApiVersion is included in the url query, there's no need to check whether the "?" sign is present.
-                string tokenQueryElement = token is null ? String.Empty : "&continuationToken=" + token;
-                CrudResponse result = await Request(Enums.CRUD.Retrieve, url + tokenQueryElement);
+                HttpHelper.UpsertQueryParam(ref url, "continuationToken", token);
+                CrudResponse result = await Request(Enums.CRUD.Retrieve, url);
+                object content;
+                try
+                {
+                    content = JSON.Deserialize<CollectionResult>((string)result.Content)?.Value;
+                }
+                catch (Exception ex)
+                {
+                    content = result.Content;
+                }
                 output.StatusCode = result.StatusCode;
                 int status = (int)result.StatusCode;
-                results.Add(result.Content);
+                results.Add(content);
                 token = result.NextPageToken;
             }
             while (token != null);
-            output.Content = System.Text.Json.JsonSerializer.Serialize(results);
+            output.Content = results;
             return output;
         }
 
-
     }
-
 }
 
