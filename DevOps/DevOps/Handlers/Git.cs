@@ -9,7 +9,7 @@ using JSON = System.Text.Json.JsonSerializer;
 
 namespace DevOps.Handlers
 {
-    internal class Git
+    public class Git
     {
 
         private static Dictionary<string, Dictionary<string, BranchConfig>> ReposConfig;
@@ -26,7 +26,7 @@ namespace DevOps.Handlers
 
             Task<CrudResponse> action = null;
 
-            if (status == "active" && !IsAllowedTranstion(repo, source, target))
+            if (status == "active" && !IsAllowedTransition(repo, source, target))
             {
                 foreach (string behaviour in behaviours)
                 {
@@ -76,7 +76,7 @@ namespace DevOps.Handlers
             }
             return action is null ? null : await action;
         }
-        private static bool IsAllowedTranstion(string repo, string source, string target)
+        public static bool IsAllowedTransition(string repo, string source, string target)
         {
             var repoConfig = GetRepoConfig(repo);
 
@@ -96,7 +96,7 @@ namespace DevOps.Handlers
                 );
         }
 
-        private static string GetDefaultTarget(string repo, string source)
+        public static string GetDefaultTarget(string repo, string source)
         {
             string target = null;
             var repoConfig = GetRepoConfig(repo);
