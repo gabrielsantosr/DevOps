@@ -23,7 +23,6 @@ namespace DevOps.Classes
     }
 
 }
-}
 /*
  * Proposed new config structure
 {
