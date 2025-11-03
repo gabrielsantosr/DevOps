@@ -6,15 +6,51 @@ Intended to be set for 'Pull request created' and 'Pull request updated' WebHook
 
 The idea is to take action when a pull request is created or updated and the combination of source and target branch are to be avoided.
 
-The allowed transitions should be stored in environment variable `AllowedBranchTransitions` as a serialized list of instances of this project's `DevOps.Organization.Project.Git.PR.Transition` class.
+The allowed transitions should be stored in environment variable `ReposConfig`.
 
-When any source should be allowed into a specific branch, a transition should be included with source equal to `*` and the target to the specific branch name.
+Here is an example of its structure:
+```
+{
+	"MyRepoName": {
+		"master": {
+			"DefaultTarget": null,
+			"AllowedSourcesRegex": "^(test|hot-fix)$"
+		},
+		"test": {
+			"DefaultTarget": "master",
+			"AllowedSourcesRegex": "^(dev|hot-fix)$"
+		},
+		"dev": {
+			"DefaultTarget": "test",
+			"AllowedSourcesRegex": "^(feature\\/.+|hot-fix)$"
+		},
+		"dont-pull-into-me": {
+			"DefaultTarget": null,
+			"AllowedSourcesRegex": null
+		},
+		"do-pull-into-me": {
+			"DefaultTarget": null,
+			"AllowedSourcesRegex": ".+"
+		}
+	}
+}
+```
+If you need a default behaviour, add a RepoConfiguration with name `"*"`.
 
-When a specific source should be allowed to any branch, a transition should be included with source equal to the specific branch name and the target to `*`.
+Each branch configuration of each repo has a `DefaultTarget` property,  and a `AllowedSourcesRegex` property.
 
-Including a transition with source and target equal to `*` would by-pass the whole logic and would take no action. That is the only same-source-and-target transition that the program takes into account. Any other is ignored.
+A transition is OK when:
+```
+there is no configuration for the repo or a default configuration
+OR
+there is no configuration for the target branch
+OR
+there is a configuration for the source branch and its defaultTarget is the target
+OR
+the source matches the target configuration AllowedSourceRegex property
+```
+An action is attempted if the transition should be avoided.
 
-If the source-target combination is not found, the PR is active and there is a valid action included in the HTTP query, endpoint behaves according to this table:
 
 | `action`              | behaviour
 | --------------------- | -------------------------------------------------------------------------------------------------------- |
@@ -23,7 +59,7 @@ If the source-target combination is not found, the PR is active and there is a v
 | `description`         | If the description is not prefixed with a forbidden message, the forbidden message is added as a prefix. |
 | `description-abandon` | Same as action _description_, but it also changes the status of the PR to abandoned.                     |
 | `comment`             | Adds the forbidden comment as a system comment to the pull request.                                      |
-| `target`              | Searches, amongst the allowed transitions, one with a valid target for the source branch. If found, the target is automatically changed. First it checks for the first instance where the source matches the PR source and the target is any other than `*`. If not found, it checks for the first instance where the source is `*` and the target is any other than the PR source or `*`. In case `target` action cannot be accomplished because a target branch was not found to match the source, an alternative action can be tried by setting the value to `target,<alternative-action>`, e.g. `target,comment`. |
+| `target`              | If there is a configuration for the source branch, the target branch is updated to the value of its `DefaultTarget` property, if it is not null. In case `target` action cannot be accomplished because a target branch was not found to match the source, an alternative action can be tried by setting the value to `target,<alternative-action>`, e.g. `target,comment`. |
 
 
 As of now, the forbiddden message is stored in an environment variable, and I use special emoji chars, which can be included within strings as `\u<char-code>`,which are properly rendered in title, description and comments of PRs.
