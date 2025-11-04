@@ -6,12 +6,27 @@ Intended to be set for 'Pull request created' and 'Pull request updated' WebHook
 
 The idea is to take action when a pull request is created or updated and the combination of source and target branch are to be avoided.
 
+The query of the WebHook URL should include the action parameter. E.g. `<url>`?action=`<chosen-action>` 
+
+### Actions
+
+| `action`              | behaviour
+| --------------------- | -------------------------------------------------------------------------------------------------------- |
+| `title`               | If the title is not prefixed with a forbidden message, the forbidden message is added as a prefix.       |
+| `title-abandon`       | Same as action _title_, but it also changes the status of the PR to abandoned.                           |
+| `description`         | If the description is not prefixed with a forbidden message, the forbidden message is added as a prefix. |
+| `description-abandon` | Same as action _description_, but it also changes the status of the PR to abandoned.                     |
+| `comment`             | Adds the forbidden comment as a system comment to the pull request.                                      |
+| `target`              | If there is a configuration for the source branch, the target branch is updated to the value of its `DefaultTarget` property, if it is not null. In case `target` action cannot be accomplished because a target branch was not found to match the source, an alternative action can be tried by setting the value to `target,<alternative-action>`, e.g. `target,comment`. |
+
+### Configuration
 The allowed transitions should be stored in environment variable `ReposConfig`.
 
-Here is an example of its structure:
+#### Sample
 ```
+// As object
 {
-	"MyRepoName": {
+	"MyProject/MyRepo": {
 		"master": {
 			"DefaultTarget": null,
 			"AllowedSourcesRegex": "^(test|hot-fix)$"
@@ -34,32 +49,30 @@ Here is an example of its structure:
 		}
 	}
 }
+// As serialized object (as it should be stored). Pay attention to escaped chars in regexs
+"{\"MyProject/MyRepo\":{\"master\":{\"DefaultTarget\":null,\"AllowedSourcesRegex\":\"^(test|hot-fix)$\"},\"test\":{\"DefaultTarget\":\"master\",\"AllowedSourcesRegex\":\"^(dev|hot-fix)$\"},\"dev\":{\"DefaultTarget\":\"test\",\"AllowedSourcesRegex\":\"^(feature\\\\/.+|hot-fix)$\"},\"dont-pull-into-me\":{\"DefaultTarget\":null,\"AllowedSourcesRegex\":null},\"do-pull-into-me\":{\"DefaultTarget\":null,\"AllowedSourcesRegex\":\".+\"}}}"
+
 ```
-If you need a default behaviour, add a RepoConfiguration with name `"*"`.
+An applicable configuration is selected following the following hierarchical criteria.
+| Appicable config keys |
+| --------------------- |
+| `<project>/<repo>`    |
+| `*/<repo>`            |
+| `<project>/*`         |
+| `*`                   |
 
 Each branch configuration of each repo has a `DefaultTarget` property,  and a `AllowedSourcesRegex` property.
 
 A transition is OK when:
 ```
-there is no configuration for the repo or a default configuration
+No applicable configuration is found
 OR
-there is no configuration for the target branch
+There is no configuration for the target branch
 OR
-there is a configuration for the source branch and its defaultTarget is the target
+There is a configuration for the source branch and its defaultTarget is the target
 OR
-the source matches the target configuration AllowedSourceRegex property
+The source matches the target configuration AllowedSourceRegex property
 ```
-An action is attempted if the transition should be avoided.
-
-
-| `action`              | behaviour
-| --------------------- | -------------------------------------------------------------------------------------------------------- |
-| `title`               | If the title is not prefixed with a forbidden message, the forbidden message is added as a prefix.       |
-| `title-abandon`       | Same as action _title_, but it also changes the status of the PR to abandoned.                           |
-| `description`         | If the description is not prefixed with a forbidden message, the forbidden message is added as a prefix. |
-| `description-abandon` | Same as action _description_, but it also changes the status of the PR to abandoned.                     |
-| `comment`             | Adds the forbidden comment as a system comment to the pull request.                                      |
-| `target`              | If there is a configuration for the source branch, the target branch is updated to the value of its `DefaultTarget` property, if it is not null. In case `target` action cannot be accomplished because a target branch was not found to match the source, an alternative action can be tried by setting the value to `target,<alternative-action>`, e.g. `target,comment`. |
 
 
 As of now, the forbiddden message is stored in an environment variable, and I use special emoji chars, which can be included within strings as `\u<char-code>`,which are properly rendered in title, description and comments of PRs.

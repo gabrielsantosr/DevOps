@@ -23,7 +23,6 @@ namespace Test
         [InlineData("hot-fix", "test", true)]
         [InlineData("hot-fix", "master", true)]
         [InlineData("feature/something", "dev", true)]
-        [InlineData("feature/something", "dev", true)]
         [InlineData("feature/something", "test", false)]
         [InlineData("feature/something", "master", false)]
         [InlineData("*", "dev", false)]
@@ -39,7 +38,7 @@ namespace Test
 
         public void IsAllowedTransition_Test(string source, string target, bool expected)
         {
-            Assert.Equal(expected, DevOps.Handlers.Git.IsAllowedTransition("MyRepoName", source, target));
+            Assert.Equal(expected, DevOps.Handlers.Git.IsAllowedTransition("MyProject", "MyRepo", source, target));
         }
 
         [Theory]
@@ -48,15 +47,15 @@ namespace Test
         [InlineData("master", null)]
         public void GetDefaultTarget_Test(string source, string expected)
         {
-            string actual = DevOps.Handlers.Git.GetDefaultTarget("MyRepoName", source);
+            string actual = DevOps.Handlers.Git.GetDefaultTarget("MyProject","MyRepo", source);
             Assert.Equal(expected, actual);
         }
 
         private static void Init()
         {
-            var config = new Dictionary<string, Dictionary<string, BranchConfig>>()
+            var config = new Dictionary<string, RepoConfig>()
             {
-                ["MyRepoName"] = new()
+                ["MyProject/MyRepo"] = new()
                 {
                     ["master"] = new() { AllowedSourcesRegex = "^(test|hot-fix)$" },
                     ["test"] = new() { AllowedSourcesRegex = "^(dev|hot-fix)$", DefaultTarget = "master" },
