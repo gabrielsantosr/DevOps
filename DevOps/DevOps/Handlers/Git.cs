@@ -3,7 +3,6 @@ using DevOps.Helpers;
 using DevOps.Organization.Project.Git.PR;
 using DevOps.Organization.Project.Git.PR.Event;
 using DevOps.Organization.Project.Git.PR.Thread;
-using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
 using JSON = System.Text.Json.JsonSerializer;
 
@@ -12,11 +11,12 @@ namespace DevOps.Handlers
     public class Git
     {
 
-        private static Dictionary<string, Dictionary<string, BranchConfig>> ReposConfig;
+        private static Dictionary<string, RepoConfig> ReposConfig;
         private static string ForbiddenBranchTransitionMessage = Environment.GetEnvironmentVariable("ForbiddenBranchTransitionMessage");
-        public static async Task<CrudResponse> UpsertPullRequestEvent(Event prEvent, string [] behaviours)
+        public static async Task<CrudResponse> UpsertPullRequestEvent(Event prEvent, string[] behaviours)
         {
-            string repo = prEvent.resource.repository.name;
+            string projectName = prEvent.resource.repository.project.name;
+            string repoName = prEvent.resource.repository.name;
             string source = prEvent.resource.sourceRefName.Substring(Constants.Constants.BranchPrefix.Length);
             string target = prEvent.resource.targetRefName.Substring(Constants.Constants.BranchPrefix.Length);
             string status = prEvent.resource.status;
@@ -26,7 +26,7 @@ namespace DevOps.Handlers
 
             Task<CrudResponse> action = null;
 
-            if (status == "active" && !IsAllowedTransition(repo, source, target))
+            if (status == "active" && !IsAllowedTransition(projectName, repoName, source, target))
             {
                 foreach (string behaviour in behaviours)
                 {
@@ -50,7 +50,7 @@ namespace DevOps.Handlers
                                 action = CRUD.Update(url, new UpdateRequest() { Description = $"{ForbiddenBranchTransitionMessage}| {description}", Status = Status.Abandoned });
                             break;
                         case "target":
-                            string newTarget = GetDefaultTarget(repo, source);
+                            string newTarget = GetDefaultTarget(projectName, repoName, source);
                             if (newTarget != null)
                                 action = CRUD.Update(url, new UpdateRequest() { TargetRefName = Constants.Constants.BranchPrefix + newTarget });
                             else
@@ -76,9 +76,9 @@ namespace DevOps.Handlers
             }
             return action is null ? null : await action;
         }
-        public static bool IsAllowedTransition(string repo, string source, string target)
+        public static bool IsAllowedTransition(string project, string repo, string source, string target)
         {
-            var repoConfig = GetRepoConfig(repo);
+            var repoConfig = GetRepoConfig(project,repo);
 
             return
                 //There is no configuration set for the repo
@@ -96,10 +96,10 @@ namespace DevOps.Handlers
                 );
         }
 
-        public static string GetDefaultTarget(string repo, string source)
+        public static string GetDefaultTarget(string project,string repo, string source)
         {
             string target = null;
-            var repoConfig = GetRepoConfig(repo);
+            var repoConfig = GetRepoConfig(project, repo);
             if (repoConfig is not null && repoConfig.ContainsKey(source))
             {
                 target = repoConfig[source]?.DefaultTarget;
@@ -108,18 +108,28 @@ namespace DevOps.Handlers
         }
 
         /// <summary>
-        /// Returns the configuration for the <paramref name="repo"/>, or the default one, or <i>null</i>.
+        /// Returns the first applicable configuration found for the <paramref name="project"/> and <paramref name="repo"/>, or <i>null</i>.<br/>
+        /// The configuration is stored as a JSON in the environment variable <i>ReposConfig</i>, and is parsed as a  Dictionary<br/>
+        /// Each key of the dictionary is a string and each value is a RepoConfig <br/><br/>
+        /// An applicable configuration key can be:  
+        /// <list type="number">
+        /// <item>"<paramref name="project"/>/<paramref name="repo"/>"</item>
+        /// <item>"<b>*</b>/<paramref name="repo"/>"</item>
+        /// <item>"<paramref name="project"/>/<b>*</b>"</item>
+        /// <item>"<b>*</b>"</item>
+        /// </list>
+        /// <br/>
         /// </summary>
         /// <param name="repo"></param>
         /// <returns></returns>
-        private static Dictionary<string, BranchConfig> GetRepoConfig(string repo)
+        private static RepoConfig GetRepoConfig(string project, string repo)
         {
             if (ReposConfig is null)
             {
                 const string reposConfigVariableName = "ReposConfig";
                 try
                 {
-                    ReposConfig = JSON.Deserialize<Dictionary<string, Dictionary<string, BranchConfig>>>(Environment.GetEnvironmentVariable(reposConfigVariableName));
+                    ReposConfig = JSON.Deserialize<Dictionary<string, RepoConfig>>(Environment.GetEnvironmentVariable(reposConfigVariableName));
 
                 }
                 catch (Exception ex)
@@ -127,9 +137,18 @@ namespace DevOps.Handlers
                     throw new Exception($"Error when trying to parse {reposConfigVariableName}");
                 }
             }
-            Dictionary<string, BranchConfig> repoConfig;
-            if (!ReposConfig.TryGetValue(repo, out repoConfig))
-                ReposConfig.TryGetValue("*", out repoConfig);
+            RepoConfig repoConfig = null;
+            string[] keys = {
+                $"{project}/{repo}",
+                $"*/{repo}",
+                $"{project}/*",
+                "*"
+            };
+            foreach (string key in keys)
+            {
+                if (ReposConfig.TryGetValue(key, out repoConfig))
+                    break;
+            }
             return repoConfig;
         }
 
