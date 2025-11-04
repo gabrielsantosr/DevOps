@@ -4,11 +4,16 @@ When it needs to make CRUD operations, it can use a Personal Access Token, or ev
 ## UspertPullRequest
 Intended to be set for 'Pull request created' and 'Pull request updated' WebHooks.
 
-The idea is to take action when a pull request is created or updated and the combination of source and target branch are to be avoided.
+The idea is, given there is no branch policy that can restrict which branches can be pulled into which other branches, to take action when a pull request is created or updated and the combination of source and target branches is to be avoided.
 
 The query of the WebHook URL should include the action parameter. E.g. `<url>`?action=`<chosen-action>` 
 
-### Actions
+ _**Comment**: I am not including the access key of the function in the URL query as code=`<access-key>`, but in the `x-functions-key` header.
+If you prefer to include it in the URL, then set `<url>`?code=`<access-key>`&action=`<chosen-action>`)_
+
+
+
+### Available actions
 
 | `action`              | behaviour
 | --------------------- | -------------------------------------------------------------------------------------------------------- |
@@ -18,6 +23,8 @@ The query of the WebHook URL should include the action parameter. E.g. `<url>`?a
 | `description-abandon` | Same as action _description_, but it also changes the status of the PR to abandoned.                     |
 | `comment`             | Adds the forbidden comment as a system comment to the pull request.                                      |
 | `target`              | If there is a configuration for the source branch, the target branch is updated to the value of its `DefaultTarget` property, if it is not null. In case `target` action cannot be accomplished because a target branch was not found to match the source, an alternative action can be tried by setting the value to `target,<alternative-action>`, e.g. `target,comment`. |
+
+_**Comment**: As of now, the forbiddden message is stored in an environment variable, and I use special emoji chars, which can be included within strings as `\u<char-code>`,which are properly rendered in title, description and comments of PRs._
 
 ### Configuration
 The allowed transitions should be stored in environment variable `ReposConfig`.
@@ -73,10 +80,6 @@ There is a configuration for the source branch and its defaultTarget is the targ
 OR
 The source matches the target configuration AllowedSourceRegex property
 ```
-
-
-As of now, the forbiddden message is stored in an environment variable, and I use special emoji chars, which can be included within strings as `\u<char-code>`,which are properly rendered in title, description and comments of PRs.
-
 
 ### References
 [WebHooks](https://learn.microsoft.com/en-us/azure/devops/repos/git/create-pr-status-server-with-azure-functions?view=azure-devops)
