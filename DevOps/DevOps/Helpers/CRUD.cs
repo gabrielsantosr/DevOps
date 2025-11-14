@@ -27,36 +27,32 @@ namespace DevOps.Helpers
             {
                 HttpHelper.UpsertQueryParam(ref url, "api-version", apiVersion);
 
-                StringContent reqBody = request is null ? null : new StringContent(JSON.Serialize(request), Encoding.UTF8, "application/json");
-                using (HttpClient client = new HttpClient())
+                using StringContent reqBody = request is null ? null : new StringContent(JSON.Serialize(request), Encoding.UTF8, "application/json");
+                using HttpClient client = new HttpClient();
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(acceptHeaderValue));
+
+                client.DefaultRequestHeaders.Authorization = await Authentication.GetAuthorization();
+
+                Task<HttpResponseMessage> responseTask = null;
+                switch (crudOperation)
                 {
-                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(acceptHeaderValue));
-
-                    client.DefaultRequestHeaders.Authorization = await Authentication.GetAuthorization();
-
-                    Task<HttpResponseMessage> responseTask = null;
-                    switch (crudOperation)
-                    {
-                        case Enums.CRUD.Create:
-                            responseTask = client.PostAsync(url, reqBody); break;
-                        case Enums.CRUD.Retrieve:
-                            responseTask = client.GetAsync(url); break;
-                        case Enums.CRUD.Update:
-                            responseTask = client.PatchAsync(url, reqBody); break;
-                        case Enums.CRUD.Delete:
-                            responseTask = client.DeleteAsync(url); break;
-                    }
-                    using (HttpResponseMessage response = await responseTask)
-                    {
-                        string responseBody = await response.Content.ReadAsStringAsync();
-                        return new CrudResponse()
-                        {
-                            StatusCode = response.StatusCode,
-                            Content = responseBody,
-                            NextPageToken = crudOperation == Enums.CRUD.Retrieve ? GetContinuationToken(response.Headers) : null
-                        };
-                    }
+                    case Enums.CRUD.Create:
+                        responseTask = client.PostAsync(url, reqBody); break;
+                    case Enums.CRUD.Retrieve:
+                        responseTask = client.GetAsync(url); break;
+                    case Enums.CRUD.Update:
+                        responseTask = client.PatchAsync(url, reqBody); break;
+                    case Enums.CRUD.Delete:
+                        responseTask = client.DeleteAsync(url); break;
                 }
+                using HttpResponseMessage response = await responseTask;
+                string responseBody = await response.Content.ReadAsStringAsync();
+                return new CrudResponse()
+                {
+                    StatusCode = response.StatusCode,
+                    Content = responseBody,
+                    NextPageToken = crudOperation == Enums.CRUD.Retrieve ? GetContinuationToken(response.Headers) : null
+                };
             }
             catch (Exception ex)
             {
